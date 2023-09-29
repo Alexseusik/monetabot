@@ -46,3 +46,10 @@ def give_number() :
     contact_button = types.KeyboardButton("Поділитись номером", request_contact=True)
     markup.add(contact_button)
     return markup
+
+
+def finish_main_btn():
+    markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button1 = types.KeyboardButton("/restart")
+    markup.add(button1)
+    return markup
