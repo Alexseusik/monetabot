@@ -7,6 +7,8 @@ import sqlite3
 from keyboards import *
 
 admin_chat_id = 130946738
+group_chat_id = -1002130116669
+
 
 address_check = {
     '1' : '150',
@@ -165,7 +167,7 @@ def choose_amount(message):
 
         user_data['Address'] = address
 
-        bot.send_message(chat_id, "Введіть суму яку Ви хочете обміняти:", reply_markup=types.ReplyKeyboardRemove())
+        bot.send_message(chat_id, "Введіть суму яку Ви хочете обміняти:", reply_markup=types.ReplyKeyboardMarkup(resize_keyboard=True).row(types.KeyboardButton('До головного меню')))
         bot.register_next_step_handler(message, choose_phone)
 
     elif address == "До головного меню" :
@@ -190,8 +192,9 @@ def choose_phone(message):
         user_data['Amount'] = amount
 
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
-        contact_button = types.KeyboardButton("Відправити мій номер телефону", request_contact=True)
-        markup.add(contact_button)
+        contact_button = types.KeyboardButton("Поділитись номером", request_contact=True)
+        menu = types.KeyboardButton("До головного меню")
+        markup.row(contact_button).row(menu)
 
         bot.send_message(message.chat.id, 'Натисніть кнопку «поділитись номером», '
                                           'щоб менеджер мав змогу зв`язатися з Вами для уточнення деталей угоди.',
@@ -273,17 +276,27 @@ def congratulation(message):
 
         try:
             bot.send_message(admin_chat_id, f"""
-            Заявка {user_data['Request number']}
-            Валюта {user_data['Currency']}
-            Операційна каса {address_check[user_data['Address']]}
-            Сума {user_data['Amount']}
-            Клієнт хоче {proccess_check[user_data['Exchange type']]}
-            
-            Ім'я клієнта {user_data['User name']}
-            Телефон клієнта +{user_data['User phone']}
-            """)
-        except:
-            pass
+Заявка {user_data['Request number']}
+Валюта {user_data['Currency']}
+Операційна каса {address_check[user_data['Address']]}
+Сума {user_data['Amount']}
+Клієнт хоче {proccess_check[user_data['Exchange type']]}
+
+Ім'я клієнта {user_data['User name']}
+Телефон клієнта +{user_data['User phone']}
+""")
+            bot.send_message(group_chat_id, f"""
+Заявка {user_data['Request number']}
+Валюта {user_data['Currency']}
+Операційна каса {address_check[user_data['Address']]}
+Сума {user_data['Amount']}
+Клієнт хоче {proccess_check[user_data['Exchange type']]}
+
+Ім'я клієнта {user_data['User name']}
+Телефон клієнта +{user_data['User phone']}
+""")
+        except Exception as e:
+            print(f"Помилка: {str(e)}")
 
         bot.register_next_step_handler(message, choice)
         print(user_data)
