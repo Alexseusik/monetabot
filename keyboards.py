@@ -21,7 +21,7 @@ def create_keyboard():
 def currency_choose_keyboard():
     usd = types.KeyboardButton('🇺🇸USD')
     eur = types.KeyboardButton('🇪🇺EUR')
-    pln = types.KeyboardButton('🇨🇿PLN')
+    pln = types.KeyboardButton('🇵🇱PLN')
     czk = types.KeyboardButton('🇨🇿CZK')
     gbp = types.KeyboardButton('🇬🇧GBP')
     menu = types.KeyboardButton('До головного меню')
