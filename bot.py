@@ -35,7 +35,7 @@ user_data = {
     'Address': 0
 }
 
-TOKEN = '6548939820:AAGTQ4c6tM9qgJTX6ve5oxmmJbEh-aAfzro'
+TOKEN = '6380884350:AAFRxB35XYeYtzC6QHxeQ9Vq7xmJo9iEvkI'
 
 bot = telebot.TeleBot(TOKEN)
 
