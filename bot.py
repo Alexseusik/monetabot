@@ -298,10 +298,8 @@ def congratulation(message):
 Телефон клієнта +{user_data['User phone']} """)
 
         except Exception as e:
-
             print(str(e))
 
-        finally:
             bot.send_message(group_chat_id, f"""
 Заявка {user_data['Request number']}
 Валюта {user_data['Currency']}
