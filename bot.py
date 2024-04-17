@@ -5,10 +5,9 @@ import re
 import telebot
 import sqlite3
 from keyboards import *
+import requests
 
-admin_chat_id = 130946738
-group_chat_id = -1002130116669
-
+group_chat_id = -1001950507009
 
 address_check = {
     '1': '485',
@@ -20,8 +19,8 @@ address_check = {
 }
 
 proccess_check = {
-    'Купівля' : 'купити',
-    'Продаж' : 'продати'
+    'Купівля': 'купити',
+    'Продаж': 'продати'
 }
 
 user_data = {
@@ -46,13 +45,7 @@ def handle_start(message):
     chat_id = message.chat.id
     print(f'user_id {message.from_user.id}')
 
-    if message.from_user.id == admin_chat_id:
-        bot.send_message(chat_id, f"""
-Вітаю {message.from_user.username} у адмін панелі бота. Нижче у вас є можливість подивитись потрібну інформацію""")
-        print('Ok')
-
-    else:
-        bot.send_message(chat_id, """Я чат-бот мережі  ліцензованих пунктів обміну валют «МОНЕТА».
+    bot.send_message(chat_id, """Я чат-бот мережі  ліцензованих пунктів обміну валют «МОНЕТА».
         
 З моєю допомогою можна: 
 
@@ -62,7 +55,7 @@ def handle_start(message):
 ❕гарантуємо конфіденційність
     
 Оберіть потрібну дію:""", reply_markup=create_keyboard())
-        bot.register_next_step_handler(message, choice)
+    bot.register_next_step_handler(message, choice)
 
 
 @bot.message_handler(func=lambda message: (message is True) and (message.text != '/start'))
@@ -276,8 +269,7 @@ def congratulation(message):
         bot.send_message(chat_id, """Якщо хочете залишити ще заявку натисніть кнопку /restart нижче""",
                          reply_markup=finish_main_btn())
 
-        try:
-            bot.send_message(admin_chat_id, f"""
+        text_for_workers = f"""
 Заявка {user_data['Request number']}
 Валюта {user_data['Currency']}
 Операційна каса {address_check[user_data['Address']]}
@@ -286,29 +278,15 @@ def congratulation(message):
 
 Ім'я клієнта {user_data['User name']}
 Телефон клієнта +{user_data['User phone']}
-""")
-            bot.send_message(group_chat_id, f"""
-Заявка {user_data['Request number']}
-Валюта {user_data['Currency']}
-Операційна каса {address_check[user_data['Address']]}
-Сума {user_data['Amount']}
-Клієнт хоче {proccess_check[user_data['Exchange type']]}
+"""
+        try:
 
-Ім'я клієнта {user_data['User name']}
-Телефон клієнта +{user_data['User phone']} """)
+            bot.send_message(group_chat_id, text_for_workers, reply_to_message_id=16258)
 
         except Exception as e:
             print(str(e))
 
-            bot.send_message(group_chat_id, f"""
-Заявка {user_data['Request number']}
-Валюта {user_data['Currency']}
-Операційна каса {address_check[user_data['Address']]}
-Сума {user_data['Amount']}
-Клієнт хоче {proccess_check[user_data['Exchange type']]}
-
-Ім'я клієнта {user_data['User name']}
-Телефон клієнта +{user_data['User phone']} """)
+            bot.send_message(group_chat_id, text_for_workers, reply_to_message_id=16258)
 
         bot.register_next_step_handler(message, choice)
         print(user_data)
@@ -316,6 +294,7 @@ def congratulation(message):
     else:
         bot.send_message(chat_id, """ Будь ласка натисніть кнопку «поділитись номером», щоб менеджер мав змогу зв`язатися з Вами для уточнення деталей угоди. """)
         bot.register_next_step_handler(message, congratulation)
+
 
 @bot.message_handler(commands=['restart'])
 def restart_message(message):
@@ -330,6 +309,7 @@ def restart_message(message):
     
 Оберіть потрібну дію:""", reply_markup=create_keyboard())
     bot.register_next_step_handler(message, choice)
+
 
 @bot.message_handler(func=lambda message: (message is True) and (message.text != '/start'))
 def process_main_menu_choice(message):
