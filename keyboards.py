@@ -36,8 +36,9 @@ def address_choose_keyboard():
     add4 = types.KeyboardButton('4')
     add5 = types.KeyboardButton('5')
     add6 = types.KeyboardButton('6')
+    add7 = types.KeyboardButton('7')
     menu = types.KeyboardButton('До головного меню')
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True).row(add1, add2, add3).row(add4, add5, add6).row(menu)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True).row(add1, add2, add3).row(add4, add5, add6).row(add7, menu)
     return markup
 
 
