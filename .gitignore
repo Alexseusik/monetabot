@@ -1,0 +1,29 @@
+# Секрети та конфігурації
+.env
+
+# Бази даних
+*.db
+*.sqlite3
+db/
+
+# Віртуальне середовище (додано .venv)
+.venv/
+venv/
+env/
+
+# Python-кеш
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Логи (знадобиться для нашого наступного кроку)
+*.log
+
+# Файли IDE (PyCharm, VSCode)
+.idea/
+.vscode/
+
+# Системні файли Windows/Mac
+.DS_Store
+Thumbs.db
