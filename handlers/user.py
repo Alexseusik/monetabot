@@ -11,6 +11,9 @@ from utils.states import ExchangeForm
 from database.engine import async_session
 from database.models import Client
 from config import config
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Создаем роутер. К нему мы будем привязывать все обработчики
 user_router = Router()
@@ -171,7 +174,8 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     try:
         await bot.send_message(config.group_chat_id, text_for_workers)
     except Exception as e:
-        print(f"Ошибка отправки в группу: {e}")  # В идеале здесь должен быть logger.error
+        # exc_info=True додасть детальний слід помилки (Traceback) у файл, що дуже допоможе при пошуку багів
+        logger.error(f"Помилка відправки заявки в групу: {e}", exc_info=True)
 
     # Отвечаем пользователю
     success_text = (

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="clients.db" uuid="722d9e9e-2dbd-4f2c-9de7-fa825f25c1dd">
-      <driver-ref>sqlite.xerial</driver-ref>
+    <data-source source="LOCAL" name="neon-monetadb" uuid="4c5c4b7e-076b-420a-8874-c43d3fae6179">
+      <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
-      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/clients.db</jdbc-url>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://ep-fragrant-credit-agm055bs-pooler.c-2.eu-central-1.aws.neon.tech:5432/monetadb</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
