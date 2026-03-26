@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-
+from handlers.admin import admin_router
 from config import config
 from database.engine import init_db
 from handlers.user import user_router
@@ -43,6 +43,7 @@ async def main():
 
     dp = Dispatcher()
     dp.include_router(user_router)
+    dp.include_router(admin_router)  # <--- ДОДАЛИ
 
     await init_db()
     logger.info("База даних готова.")

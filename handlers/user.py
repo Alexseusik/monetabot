@@ -2,7 +2,8 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message
 from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
-
+from keyboards.inline import get_admin_order_keyboard
+from datetime import datetime
 from keyboards.reply import (
     get_main_menu, get_currency_menu,
     get_address_menu, get_cancel_menu, get_phone_menu
@@ -143,7 +144,6 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     data = await state.get_data()
     phone = message.contact.phone_number
 
-    # Сохраняем в базу данных
     async with async_session() as session:
         new_client = Client(
             user_id=message.from_user.id,
@@ -155,15 +155,21 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
             address=data['address']
         )
         session.add(new_client)
-        await session.flush()  # Получаем req_id до коммита
+        await session.flush()
         req_id = new_client.req_id
         await session.commit()
 
-    # Отправляем сообщение менеджерам
+    # --- МАГІЯ ФОРМАТУВАННЯ НОМЕРА ---
+    # Отримуємо поточний рік і місяць (наприклад, 202603) і склеюємо з req_id
+    current_date = datetime.now()
+    order_number = f"{current_date.strftime('%Y%m')}{req_id}"
+
     process_verb = "купити" if data['exchange_type'] == "Купівля" else "продати"
     text_for_workers = (
-        f"🔴 <b>Нова заявка №{req_id}</b>\n\n"
+        f"🔴 <b>Нова заявка №{order_number}</b>\n\n"  # Використовуємо order_number
         f"Валюта: {data['currency']}\n"
+        # Зверни увагу: якщо ти перейшов на network.json, тут треба брати адресу звідти. 
+        # Якщо ні - залишай ADDRESS_CHECK
         f"Операційна каса: {ADDRESS_CHECK[data['address']]}\n"
         f"Сума: {data['amount']}\n"
         f"Клієнт хоче {process_verb}\n\n"
@@ -172,23 +178,22 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     )
 
     try:
-        await bot.send_message(config.group_chat_id, text_for_workers)
+        await bot.send_message(
+            config.group_chat_id,
+            text_for_workers,
+            reply_markup=get_admin_order_keyboard(order_number)  # Передаємо рядок у клавіатуру
+        )
     except Exception as e:
-        # exc_info=True додасть детальний слід помилки (Traceback) у файл, що дуже допоможе при пошуку багів
         logger.error(f"Помилка відправки заявки в групу: {e}", exc_info=True)
 
-    # Отвечаем пользователю
     success_text = (
-        f"✅ <b>Ваше замовлення №{req_id} відправлено!</b>\n\n"
+        f"✅ <b>Ваше замовлення №{order_number} відправлено!</b>\n\n"  # Використовуємо order_number
         f"Операція: {data['exchange_type']}\n"
         f"Сума: {data['amount']} {data['currency']}\n\n"
         "Наш менеджер зв'яжеться з Вами найближчим часом."
     )
     await message.answer(success_text, reply_markup=get_main_menu())
-
-    # Очищаем состояние
     await state.clear()
-
 
 # Если на этапе отправки телефона прислали текст, а не контакт
 @user_router.message(ExchangeForm.phone)
