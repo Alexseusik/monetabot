@@ -1,35 +1,32 @@
+import logging
+from datetime import datetime
+
 from aiogram import Router, F, Bot
 from aiogram.types import Message
-from aiogram.filters import CommandStart, StateFilter
+from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from config import config
+from database.models import Client
 from keyboards.inline import get_admin_order_keyboard
-from datetime import datetime
 from keyboards.reply import (
     get_main_menu, get_currency_menu,
     get_address_menu, get_cancel_menu, get_phone_menu
 )
+from utils.data_loader import NETWORK_DATA
 from utils.states import ExchangeForm
-from database.engine import async_session
-from database.models import Client
-from config import config
-import logging
 
 logger = logging.getLogger(__name__)
 
-# Создаем роутер. К нему мы будем привязывать все обработчики
+# Створюємо роутер
 user_router = Router()
 
-# Словари для маппинга адресов (взято из твоего старого кода)
-ADDRESS_CHECK = {
-    '1': '485', '2': '78', '3': '151', '4': '321',
-    '5': '575', '6': '628', '7': '194'
-}
 
-
-# --- ОБРАБОТЧИК ОТМЕНЫ (КНОПКА НАЗАД) ---
+# --- ОБРОБНИК СКАСУВАННЯ (КНОПКА НАЗАД) ---
 @user_router.message(F.text == "До головного меню")
 async def cancel_handler(message: Message, state: FSMContext):
-    """Сбрасывает состояние FSM и возвращает в главное меню."""
+    """Скидає стан FSM та повертає до головного меню."""
     await state.clear()
     await message.answer(
         "Ви повернулись до головного меню. Оберіть дію:",
@@ -37,7 +34,7 @@ async def cancel_handler(message: Message, state: FSMContext):
     )
 
 
-# --- ГЛАВНОЕ МЕНЮ И ИНФО ---
+# --- ГОЛОВНЕ МЕНЮ ТА ІНФО ---
 @user_router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
@@ -68,19 +65,15 @@ async def process_info(message: Message):
 
 @user_router.message(F.text == "🌐Адреси обмінників")
 async def addresses_info(message: Message):
-    text = (
-        "🏦 <b>Лівий берег</b>\n"
-        "📍 вул. Вишняківська 2\n📍 вул. Олени Пчілки 6А\n📍 пр. Миколи Бажана 1-О\n"
-        "📍 вул. Кирила Осьмака 1-Б\n📍 вул. Зарічна, 1-В\n📍 вул. Трускавецька, 6-А\n\n"
-        "🏦 <b>Правий берег</b>\n"
-        "📍 проспект Голосіївський 132"
-    )
+    text = "🏦 <b>Наші відділення:</b>\n\n"
+    for branch_id, data in NETWORK_DATA["branches"].items():
+        text += f"📍 <b>{branch_id}.</b> {data['address']}\n"
     await message.answer(text, reply_markup=get_main_menu())
 
 
 # --- ВОРОНКА ЗАЯВКИ (FSM) ---
 
-# 1. Начало: Выбор Купить/Продать
+# 1. Початок: Вибір Купити/Продати
 @user_router.message(F.text.in_({"📈Купити валюту", "📉Продати валюту"}))
 async def start_exchange(message: Message, state: FSMContext):
     operation = "Купівля" if message.text == "📈Купити валюту" else "Продаж"
@@ -90,32 +83,28 @@ async def start_exchange(message: Message, state: FSMContext):
     await message.answer(f"Яку валюту ви хочете {operation.lower()}?", reply_markup=get_currency_menu())
 
 
-# 2. Выбор валюты
+# 2. Вибір валюти
 @user_router.message(ExchangeForm.currency)
 async def process_currency(message: Message, state: FSMContext):
-    valid_currencies = ['🇺🇸USD', '🇪🇺EUR', '🇨🇿CZK', '🇵🇱PLN', '🇬🇧GBP']
-    if message.text not in valid_currencies:
+    if message.text not in NETWORK_DATA["currencies"]:
         await message.answer("Будь ласка, оберіть валюту з клавіатури нижче.")
-        return  # Прерываем функцию, состояние не меняется
+        return
 
     await state.update_data(currency=message.text)
     await state.set_state(ExchangeForm.address)
 
-    text = (
-        "Оберіть пункт обміну:\n\n"
-        "<b>1️⃣</b> вул. Вишняківська 2\n<b>2️⃣</b> вул. Олени Пчілки 6А\n"
-        "<b>3️⃣</b> пр. Миколи Бажана 1-О\n<b>4️⃣</b> вул. Кирила Осьмака 1-Б\n"
-        "<b>5️⃣</b> вул. Зарічна, 1-В\n<b>6️⃣</b> вул. Трускавецька, 6-А\n\n"
-        "<b>7️⃣</b> проспект Голосіївський 132"
-    )
+    text = "Оберіть пункт обміну:\n\n"
+    for branch_id, data in NETWORK_DATA["branches"].items():
+        text += f"<b>{branch_id}️⃣</b> {data['address']}\n"
+
     await message.answer(text, reply_markup=get_address_menu())
 
 
-# 3. Выбор адреса
+# 3. Вибір адреси
 @user_router.message(ExchangeForm.address)
 async def process_address(message: Message, state: FSMContext):
-    if message.text not in ADDRESS_CHECK.keys():
-        await message.answer("Будь ласка, оберіть адресу цифрами від 1 до 7.")
+    if message.text not in NETWORK_DATA["branches"]:
+        await message.answer("Будь ласка, оберіть адресу цифрами з клавіатури.")
         return
 
     await state.update_data(address=message.text)
@@ -123,7 +112,7 @@ async def process_address(message: Message, state: FSMContext):
     await message.answer("Введіть суму, яку Ви хочете обміняти (тільки цифри):", reply_markup=get_cancel_menu())
 
 
-# 4. Ввод суммы
+# 4. Введення суми
 @user_router.message(ExchangeForm.amount)
 async def process_amount(message: Message, state: FSMContext):
     if not message.text.isdigit():
@@ -138,39 +127,43 @@ async def process_amount(message: Message, state: FSMContext):
     )
 
 
-# 5. Получение контакта и сохранение в БД
+# 5. Отримання контакту та збереження в БД
 @user_router.message(ExchangeForm.phone, F.contact)
-async def process_phone(message: Message, state: FSMContext, bot: Bot):
+async def process_phone(message: Message, state: FSMContext, bot: Bot, session: AsyncSession):
+    """
+    Зверніть увагу: ми автоматично отримуємо session: AsyncSession з Middleware.
+    Ручне підключення більше не потрібне!
+    """
     data = await state.get_data()
     phone = message.contact.phone_number
 
-    async with async_session() as session:
-        new_client = Client(
-            user_id=message.from_user.id,
-            user_phone=phone,
-            user_name=message.from_user.first_name or "Без імені",
-            currency=data['currency'],
-            amount=int(data['amount']),
-            operation=data['exchange_type'],
-            address=data['address']
-        )
-        session.add(new_client)
-        await session.flush()
-        req_id = new_client.req_id
-        await session.commit()
+    # Працюємо напряму з переданою сесією
+    new_client = Client(
+        user_id=message.from_user.id,
+        user_phone=phone,
+        user_name=message.from_user.first_name or "Без імені",
+        currency=data['currency'],
+        amount=int(data['amount']),
+        operation=data['exchange_type'],
+        address=data['address']
+    )
+    session.add(new_client)
+    await session.flush() # Зберігаємо в БД, щоб отримати req_id, але ще не фіксуємо остаточно
+    req_id = new_client.req_id
+    await session.commit() # Фіксуємо зміни (Middleware міг би зробити це сам, але краще явно для FSM)
 
-    # --- МАГІЯ ФОРМАТУВАННЯ НОМЕРА ---
-    # Отримуємо поточний рік і місяць (наприклад, 202603) і склеюємо з req_id
+    # --- ФОРМАТУВАННЯ НОМЕРА ---
     current_date = datetime.now()
     order_number = f"{current_date.strftime('%Y%m')}{req_id}"
 
     process_verb = "купити" if data['exchange_type'] == "Купівля" else "продати"
+    branch_info = NETWORK_DATA["branches"][data['address']]
+    branch_code = branch_info["code"]
+
     text_for_workers = (
-        f"🔴 <b>Нова заявка №{order_number}</b>\n\n"  # Використовуємо order_number
+        f"🔴 <b>Нова заявка №{order_number}</b>\n\n"
         f"Валюта: {data['currency']}\n"
-        # Зверни увагу: якщо ти перейшов на network.json, тут треба брати адресу звідти. 
-        # Якщо ні - залишай ADDRESS_CHECK
-        f"Операційна каса: {ADDRESS_CHECK[data['address']]}\n"
+        f"Операційна каса: {branch_code}\n"
         f"Сума: {data['amount']}\n"
         f"Клієнт хоче {process_verb}\n\n"
         f"Ім'я клієнта: {message.from_user.first_name}\n"
@@ -181,13 +174,14 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
         await bot.send_message(
             config.group_chat_id,
             text_for_workers,
-            reply_markup=get_admin_order_keyboard(order_number)  # Передаємо рядок у клавіатуру
+            # Передаємо обидва параметри для правильної роботи CallbackData
+            reply_markup=get_admin_order_keyboard(req_id, order_number)
         )
     except Exception as e:
         logger.error(f"Помилка відправки заявки в групу: {e}", exc_info=True)
 
     success_text = (
-        f"✅ <b>Ваше замовлення №{order_number} відправлено!</b>\n\n"  # Використовуємо order_number
+        f"✅ <b>Ваше замовлення №{order_number} відправлено!</b>\n\n"
         f"Операція: {data['exchange_type']}\n"
         f"Сума: {data['amount']} {data['currency']}\n\n"
         "Наш менеджер зв'яжеться з Вами найближчим часом."
@@ -195,7 +189,8 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot):
     await message.answer(success_text, reply_markup=get_main_menu())
     await state.clear()
 
-# Если на этапе отправки телефона прислали текст, а не контакт
+
+# Якщо на етапі відправки телефону надіслали текст, а не контакт
 @user_router.message(ExchangeForm.phone)
 async def process_phone_invalid(message: Message):
     await message.answer("Будь ласка, використайте кнопку «Поділитись номером» внизу екрану.")

@@ -8,7 +8,8 @@ from handlers.admin import admin_router
 from config import config
 from database.engine import init_db
 from handlers.user import user_router
-
+from database.engine import async_session
+from middlewares.db import DbSessionMiddleware
 
 def setup_logging():
     """Налаштовує логування в консоль та у файл з ротацією."""
@@ -42,6 +43,8 @@ async def main():
     )
 
     dp = Dispatcher()
+
+    dp.update.middleware(DbSessionMiddleware(session_pool=async_session))
     dp.include_router(user_router)
     dp.include_router(admin_router)  # <--- ДОДАЛИ
 
