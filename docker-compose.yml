@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    container_name: moneta_bot
+    restart: unless-stopped  # Автоматично перезапускати, якщо сервер перезавантажиться
+    env_file:
+      - .env  # Підтягуємо секрети
+    volumes:
+      - ./bot.log:/app/bot.log  # Щоб логи зберігалися на самому сервері, а не зникали
