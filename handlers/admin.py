@@ -13,6 +13,8 @@ from database.engine import async_session
 from keyboards.inline import OrderCallback
 from database.models import Client
 
+from utils.data_loader import NETWORK_DATA
+
 logger = logging.getLogger(__name__)
 admin_router = Router()
 
@@ -108,7 +110,8 @@ async def export_database(message: Message):
     for c in clients:
         # Форматуємо дату
         date_str = c.created_at.strftime('%d.%m.%Y %H:%M') if c.created_at else "—"
-        real_address = ADDRESS_NAMES.get(c.address, c.address)
+        # Бот сам йде в JSON, знаходить гілку по ID (напр. "1") і дістає її "address"
+        real_address = NETWORK_DATA["branches"].get(c.address, {}).get("address", c.address)
 
         data.append({
             "Номер": c.req_id,

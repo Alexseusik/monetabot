@@ -12,7 +12,7 @@ class Client(Base):
     user_id: Mapped[int] = mapped_column(BigInteger)
     user_phone: Mapped[str] = mapped_column(String(20))
     user_name: Mapped[str] = mapped_column(String(50))
-    currency: Mapped[str] = mapped_column(String(5))
+    currency: Mapped[str] = mapped_column(String(20))
     amount: Mapped[int]
     operation: Mapped[str] = mapped_column(String(20))
     address: Mapped[str] = mapped_column(String(5))

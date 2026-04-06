@@ -38,8 +38,11 @@ async def cancel_handler(message: Message, state: FSMContext):
 @user_router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
+
+    company_name = NETWORK_DATA.get("company_name", "Мережа обміну валют")
+
     text = (
-        "Я чат-бот мережі ліцензованих пунктів обміну валют «МОНЕТА».\n"
+        f"Я чат-бот мережі ліцензованих пунктів обміну валют «{company_name}».\n"
         "З моєю допомогою можна:\n\n"
         "🔸 вигідно купувати та продавати валюту;\n"
         "🔸 ознайомитися з процедурою обміну, графіком роботи;\n"
@@ -52,14 +55,15 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @user_router.message(F.text == "📌Процедура обміну")
 async def process_info(message: Message):
+    currencies_list = "\n".join([f"🔸 {c}" for c in NETWORK_DATA["currencies"]])
+
     text = (
-        "🕐 Час роботи: з 9:00 до 20:00\n\n"
-        "Працюємо з валютами:\n"
-        "🔸 Дол. США\n🔸 Євро\n🔸 Фунт-стерлінгів\n🔸 Польський злотий\n🔸 Чеська крона\n\n"
-        "❗️ Згідно чинного законодавства проводимо операції до 400 000 грн.\n"
-        "❗️ Бронювання на 1 годину від 1000 $/€.\n\n"
-        "📱 <a href='https://t.me/VG_Kiev'>Відділ продажів</a>"
+        f"🕐 Час роботи: {NETWORK_DATA['work_hours']}\n\n"
+        f"Працюємо з валютами:\n{currencies_list}\n\n"
+        f"{NETWORK_DATA['limits_and_rules']}\n\n"
+        f"📱 <a href='{NETWORK_DATA['support_link']}'>Відділ продажів</a>"
     )
+
     await message.answer(text, reply_markup=get_main_menu(), disable_web_page_preview=True)
 
 
