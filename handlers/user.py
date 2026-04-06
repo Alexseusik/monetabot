@@ -172,8 +172,9 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot, session: 
 
     try:
         await bot.send_message(
-            config.group_chat_id,
-            text_for_workers,
+            chat_id=config.group_chat_id,
+            message_thread_id=config.group_thread_id,
+            text=text_for_workers,
             # Передаємо обидва параметри для правильної роботи CallbackData
             reply_markup=get_admin_order_keyboard(req_id, order_number)
         )
