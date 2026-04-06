@@ -1,5 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, BigInteger
+from sqlalchemy import String, BigInteger, DateTime, func
+from datetime import datetime
 
 class Base(DeclarativeBase):
     pass
@@ -15,3 +16,4 @@ class Client(Base):
     amount: Mapped[int]
     operation: Mapped[str] = mapped_column(String(20))
     address: Mapped[str] = mapped_column(String(5))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

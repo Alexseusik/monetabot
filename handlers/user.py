@@ -148,9 +148,9 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot, session: 
         address=data['address']
     )
     session.add(new_client)
-    await session.flush() # Зберігаємо в БД, щоб отримати req_id, але ще не фіксуємо остаточно
+    await session.flush()  # Зберігаємо в БД, щоб отримати req_id, але ще не фіксуємо остаточно
     req_id = new_client.req_id
-    await session.commit() # Фіксуємо зміни (Middleware міг би зробити це сам, але краще явно для FSM)
+    await session.commit()  # Фіксуємо зміни (Middleware міг би зробити це сам, але краще явно для FSM)
 
     # --- ФОРМАТУВАННЯ НОМЕРА ---
     current_date = datetime.now()
@@ -171,13 +171,21 @@ async def process_phone(message: Message, state: FSMContext, bot: Bot, session: 
     )
 
     try:
-        await bot.send_message(
-            chat_id=config.group_chat_id,
-            message_thread_id=config.group_thread_id,
-            text=text_for_workers,
-            # Передаємо обидва параметри для правильної роботи CallbackData
-            reply_markup=get_admin_order_keyboard(req_id, order_number)
-        )
+        if config.group_thread_id == 0:
+            # Тестовий режим (відправляємо просто в особисті повідомлення)
+            await bot.send_message(
+                chat_id=config.group_chat_id,
+                text=text_for_workers,
+                reply_markup=get_admin_order_keyboard(req_id, order_number)
+            )
+        else:
+            # Бойовий режим (відправляємо у вказану гілку супергрупи)
+            await bot.send_message(
+                chat_id=config.group_chat_id,
+                message_thread_id=config.group_thread_id,
+                text=text_for_workers,
+                reply_markup=get_admin_order_keyboard(req_id, order_number)
+            )
     except Exception as e:
         logger.error(f"Помилка відправки заявки в групу: {e}", exc_info=True)
 
